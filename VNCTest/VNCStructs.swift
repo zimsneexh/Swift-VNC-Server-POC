@@ -71,8 +71,8 @@ struct ServerInit {
 //
 // MARK: Determine parameters at runtime
 struct PixelFormat {
-    var bits_per_pixel: UInt8 = 32 // <--- probably wrong??
-    var depth: UInt8 = 24 // <--- especially these
+    var bits_per_pixel: UInt8 = 32 // Total number of bits per Pixel
+    var depth: UInt8 = 24 // Bits used for R/G/B data
     // macOS on M1 uses LE
     var big_endian_flag: UInt8 = 0
     var true_color_flag: UInt8 = 1
@@ -129,8 +129,6 @@ struct PixelFormat {
         packed_data[13] = 0
         packed_data[14] = 0
         packed_data[15] = 0
-        
-        print("PixelFormat: \(packed_data)")
         return packed_data
     }
 }
@@ -152,7 +150,6 @@ struct FramebufferUpdate {
         
         var i = 4
         for rectangle in rectangles {
-            
             // Set X_POS for Rectangle (UInt16)
             let x_position = pack_uint16(toPack: rectangle.x_position)
             packed_data[i] = x_position[0]
@@ -192,16 +189,14 @@ struct FramebufferUpdate {
             packed_data[i] = encoding_type[3]
             i += 1
         }
-        
-        print("\(packed_data)")
         return packed_data
     }
     
 }
 
 struct Rectangle {
-    var x_position: UInt16 = 0
-    var y_position: UInt16 = 0
+    var x_position: UInt16
+    var y_position: UInt16
     var width: UInt16
     var height: UInt16
     var encoding_type: Int32 = 0 // <-- raw

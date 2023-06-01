@@ -11,20 +11,6 @@ import Dispatch
 
 var PROTOCOL_VERSION = "RFB 003.008\n"
 
-//print data as HEX
-extension Data {
-    struct HexEncodingOptions: OptionSet {
-        let rawValue: Int
-        static let upperCase = HexEncodingOptions(rawValue: 1 << 0)
-    }
-
-    func hexEncodedString(options: HexEncodingOptions = []) -> String {
-        let format = options.contains(.upperCase) ? "%02hhX" : "%02hhx"
-        return self.map { String(format: format, $0) }.joined()
-    }
-    
-}
-
 class VNCServer {
     
     static let bufferSize = 8192
@@ -117,6 +103,7 @@ class VNCServer {
             
             var shouldKeepRunning = true
             var readData = Data(capacity: VNCServer.bufferSize)
+            var pixel_format = PixelFormat()
             
             do {
                 NSLog("Performing VNC handshake..")
@@ -131,8 +118,7 @@ class VNCServer {
                     
                                         
                     if bytesRead > 0 {
-                        //print("DATA: \(readData.hexEncodedString())")
-                        handle_event(socket: socket, buffer: &readData)
+                        handle_event(pixelformat: &pixel_format, socket: socket, buffer: &readData)
                     }
                     
                     if bytesRead == 0 {
@@ -201,7 +187,6 @@ class VNCServer {
             }
             
             // Write Struct as data
-            print(Data(bytes: byte_array, count: byte_array.count))
             try socket.write(from: Data(bytes: byte_array, count: byte_array.count))
             
             // Read answer from client
@@ -225,8 +210,6 @@ class VNCServer {
             
             // ClientInit Message
             bytes_read = try socket.read(into: &buffer)
-
-            print("BR: \(buffer)")
             
             //MARK: do we need to handle this?
             // Shared flag -> can the "Desktop" be used by multiple clients at the same time?
@@ -236,13 +219,10 @@ class VNCServer {
             buffer = Data(capacity: VNCServer.bufferSize)
             
             let serv_init_packed = ServerInit().pack()
-            
-            print("\(serv_init_packed)")
-            
             try socket.write(from: Data(bytes: serv_init_packed, count: serv_init_packed.count))
             
             NSLog("Server init sent!")
-            NSLog("Handshake completed successfully!")
+            NSLog("Handshake completed successfully.")
             
             // Clear out the buffer
             buffer = Data(capacity: VNCServer.bufferSize)

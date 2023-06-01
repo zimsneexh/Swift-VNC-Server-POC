@@ -32,5 +32,13 @@ func nsImageToRawEncoding(image: NSImage, rawEncoding: UInt8) -> Data? {
     return rawData
 }
 
+func U8_RGBA_to_2bit_color(r: UInt8, g: UInt8, b: UInt8, a: UInt8) -> UInt8 {
+    let red = (r & 0xFF) << 6
+    let green = ((g & 0xFF) << 2) | ((r & 0xF0) >> 4)
+    let blue = ((b & 0xFF) << 2) | ((g & 0xF0) >> 4)
+    let alpha = a & 0xFF
+
+    return (red | green | blue | alpha)
+}
 
 

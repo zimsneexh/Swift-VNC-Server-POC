@@ -18,7 +18,7 @@ extension NSImage {
                 let b = data?[pixelIndex + 2]
                 let a = data?[pixelIndex + 3]
                 
-                pixels.append(Pixel(r: r ?? 0, g: g ?? 0, b: b ?? 0, a: a ?? 0, row: Int64(row) , col: Int64(col) ))
+                pixels.append(Pixel(r: r ?? 0, g: g ?? 0, b: b ?? 0, a: a ?? 0, row: Int64(row) , col: Int64(col)))
             }
         }
         

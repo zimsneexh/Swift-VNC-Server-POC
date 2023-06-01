@@ -27,52 +27,37 @@ var commands: [UInt8: CommandTypes] = [
     6: CommandTypes.ClientCutText,
 ]
 
-func handle_event(socket: Socket, buffer: inout Data) {
+func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout Data) {
     let command = Array.init(buffer)
     
     if let message_type = commands[command[0]] {
         
         switch(message_type) {
         case CommandTypes.SetPixelFormat:
-            NSLog("SetPixelFormat()")
-            var pixel_format = PixelFormat()
-            
             let pixel_format_raw = Array(command[4..<20])
-            pixel_format.bits_per_pixel = pixel_format_raw[0]
-            pixel_format.depth = pixel_format_raw[1]
-            pixel_format.big_endian_flag = pixel_format_raw[2]
-            pixel_format.true_color_flag = pixel_format_raw[3]
-            pixel_format.red_max = UInt16(pixel_format_raw[4] | pixel_format_raw[5])
-            pixel_format.green_max = UInt16(pixel_format_raw[6] | pixel_format_raw[7])
-            pixel_format.blue_max = UInt16(pixel_format_raw[8] | pixel_format_raw[9])
-            pixel_format.red_shift = pixel_format_raw[10]
-            pixel_format.green_shift = pixel_format_raw[11]
-            pixel_format.blue_shift = pixel_format_raw[12]
+            pixelformat.bits_per_pixel = pixel_format_raw[0]
+            pixelformat.depth = pixel_format_raw[1]
+            pixelformat.big_endian_flag = pixel_format_raw[2]
+            pixelformat.true_color_flag = pixel_format_raw[3]
+            pixelformat.red_max = UInt16((pixel_format_raw[4] << 8) + pixel_format_raw[5])
+            pixelformat.green_max = UInt16((pixel_format_raw[6] << 8) + pixel_format_raw[7])
+            pixelformat.blue_max = UInt16((pixel_format_raw[8] << 8) + pixel_format_raw[9])
+            pixelformat.red_shift = pixel_format_raw[10]
+            pixelformat.green_shift = pixel_format_raw[11]
+            pixelformat.blue_shift = pixel_format_raw[12]
 
-            print(pixel_format)
-
-            
-            
-
+            NSLog("Client updated PixelFormat: \(pixelformat)")
             break
             
         case CommandTypes.SetEncodings:
-            NSLog("Client sent encoding hint, ignoring..")
-            
-            print(command)
-            
-            let number_of_encodings = UInt16(command[2] | command[3])
-            
+            let number_of_encodings = UInt16(UInt16(command[2] << 8) + UInt16(command[3]))
             NSLog("Number of encodings: \(number_of_encodings)")
             
             for i in stride(from: 0, to: Int(number_of_encodings * 4), by: 4) {
-                
-                let e1 = UInt16(command[4+i] << 8 | command[4+i+1])
-                let e2 = UInt16(command[4+i+2] << 8 | command[4+i+3])
-
-                let encoding_id = Int32(command[4+i] << 24 | command[4+i] << 24 | command[4+i] << 24 | command[4+i])
-                
-                print("EID=\(encoding_id)")
+                let e1 = UInt16((UInt16(command[4+i]) << 8) + UInt16(command[4+i+1]))
+                let e2 = UInt16((UInt16(command[4+i+2]) << 8) + UInt16(command[4+i+3]))
+                let encoding_id = UInt32(e1 << 16 + e2)
+                //print("EID=\(encoding_id)")
             }
             
             
@@ -82,35 +67,74 @@ func handle_event(socket: Socket, buffer: inout Data) {
         case CommandTypes.FramebufferUpdateRequest:
             NSLog("Received FramebufferUpdateRequest")
             let incremental = command[1] != 0
-            let x_position = UInt16(command[2] | command[3])
-            let y_position = UInt16(command[4] | command[5])
-            let req_width = UInt16(command[6] | command[7])
-            let req_height = UInt16(command[8] | command[9])
+            let x_position = UInt16(UInt16(command[2]) << 8 + UInt16(command[3]))
+            let y_position = UInt16(UInt16(command[4]) << 8 + UInt16(command[5]))
+            let req_width = UInt16(UInt16(command[6]) << 8 + UInt16(command[7]))
+            let req_height = UInt16(UInt16(command[8]) << 8 + UInt16(command[9]))
             
             NSLog("incremental=\(incremental) x_position=\(x_position) y_position=\(y_position) width=\(req_width) height=\(req_height)")
 
-            let white = UInt8(0xff)
-
-            let screen_size = req_width * req_height * 4
+            // The Framebuffer
+            var fb: [UInt8]? = nil
             
-            let fb = Array(repeating: white, count: Int(screen_size))
-    
-            var content_rect = Rectangle(width: UInt16(req_width), height: UInt16(req_height))
-            content_rect.x_position = x_position
-            content_rect.y_position = y_position
+            // 24bit FullColor mode with AlphaChannel
+            if pixelformat.depth == 24 && pixelformat.bits_per_pixel == 32 {
+                NSLog("Using 24bit FullColor mode with AlphaChannel.")
+                
+                // 32 bit -> Pixel
+                let frame_buffer_size: UInt64 = UInt64(req_width) * UInt64(req_height) * 4
+                                
+                // Fake FB with ((U8) R/ (U8) G/ (U8) B) / (U8) A
+                fb = Array(repeating: 0xFF, count: Int(frame_buffer_size))
+                
+                
+            // 6bit Colors with 2bit AlphaChannel
+            } else if pixelformat.depth == 6 && pixelformat.bits_per_pixel == 8 {
+                NSLog("Using 6bit Colors with 2bit AlphaChannel.")
+                
+                // 8 bit -> Pixel
+                let frame_buffer_size: UInt64 = UInt64(req_width) * UInt64(req_height)
+                let color = U8_RGBA_to_2bit_color(r: UInt8(0xFF), g: UInt8(0xFF), b: UInt8(0xFF), a: UInt8(0xFF))
+                
+                NSLog("Color is \(color)")
+                
+                // Fake FB with U8(2bit A, 2bit R, 2bit G, 2bit B)
+                fb = Array(repeating: color, count: Int(frame_buffer_size))
+            }
+            
+            // Check for framebuffer
+            guard let fb = fb else {
+                NSLog("Could not allocate Framebuffer")
+                break
+            }
+            
+            // Build Rectangle struct
+            var content_rect = Rectangle(x_position: x_position, y_position: y_position, width: UInt16(req_width), height: UInt16(req_height))
             content_rect.encoding_type = 0
             
+            // Build FramebufferUpdate struct
+            // MARK: Uses hardcoded defaults, these might change?
+            var frame_buffer_update = FramebufferUpdate(rectangles: [content_rect]).pack()
+            frame_buffer_update.append(contentsOf: fb)
             
-            var fbu = FramebufferUpdate(rectangles: [content_rect]).pack()
-            fbu.append(contentsOf: fb)
+            // Write to socket
+            do {
+                try socket.write(from: Data(bytes: frame_buffer_update, count: frame_buffer_update.count))
+            } catch {
+                NSLog("BrokenPipeError")
+                return
+            }
             
-            NSLog("Sending FramebufferUpdate-Structure: \(fbu.count) bytes")
-            try! socket.write(from: Data(bytes: fbu, count: fbu.count))
-    
-            NSLog("Data sent!!")
+            NSLog("Frame update sent!")
             
-            
-            
+            // Dispatching to background Queue
+            DispatchQueue.global(qos: .userInitiated).async {
+                repeat {
+                    
+                    
+                } while(true)
+            }
+
             /*
             let filePath = NSHomeDirectory() + "/drip.png"
             let image = NSImage(contentsOfFile: filePath)!
@@ -230,19 +254,19 @@ func handle_event(socket: Socket, buffer: inout Data) {
         
         case CommandTypes.PointerEvent:
             let button_mask = command[1]
-            let x_position = UInt16(command[2] | command[3])
-            let y_position = UInt16(command[4] | command[5])
+            let x_position = UInt16(UInt16(command[2] << 8) + UInt16(command[3]))
+            let y_position = UInt16(UInt16(command[4] << 8) +  UInt16(command[5]))
             
             NSLog("PointerEvent at x=\(x_position) y=\(y_position) button_mask=\(button_mask)")
             break
             
         default:
-            NSLog("Unhandled type: \(String(describing: commands[command[0]])) -- Data: \(buffer.hexEncodedString())")
+            NSLog("Unhandled type: \(String(describing: commands[command[0]])) -- Data: \(buffer)")
             break
         }
         
     } else {
-        print("Got unsupported message from Client..")
+        NSLog("Got unsupported message from Client..")
     }
     
 }
