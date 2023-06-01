@@ -8,7 +8,7 @@
 import AppKit
 import CoreGraphics
 
-func nsImageToRawEncoding(image: NSImage, rawEncoding: UInt8) -> Data? {
+func nsImageToU8Array(image: NSImage) -> Data? {
     guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
         return nil
     }

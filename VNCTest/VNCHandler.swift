@@ -34,6 +34,7 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
         
         switch(message_type) {
         case CommandTypes.SetPixelFormat:
+            
             let pixel_format_raw = Array(command[4..<20])
             pixelformat.bits_per_pixel = pixel_format_raw[0]
             pixelformat.depth = pixel_format_raw[1]
@@ -62,11 +63,13 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
             
             
             
+            
+            
             break
             
         case CommandTypes.FramebufferUpdateRequest:
             NSLog("Received FramebufferUpdateRequest")
-            let incremental = command[1] != 0
+            let incremental = command[1]
             let x_position = UInt16(UInt16(command[2]) << 8 + UInt16(command[3]))
             let y_position = UInt16(UInt16(command[4]) << 8 + UInt16(command[5]))
             let req_width = UInt16(UInt16(command[6]) << 8 + UInt16(command[7]))
@@ -74,6 +77,12 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
             
             NSLog("incremental=\(incremental) x_position=\(x_position) y_position=\(y_position) width=\(req_width) height=\(req_height)")
 
+            if(incremental == 0) {
+                NSLog("No update..")
+            } else {
+                NSLog("Update required..")
+            }
+            
             // The Framebuffer
             var fb: [UInt8]? = nil
             
@@ -83,10 +92,21 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
                 
                 // 32 bit -> Pixel
                 let frame_buffer_size: UInt64 = UInt64(req_width) * UInt64(req_height) * 4
-                                
-                // Fake FB with ((U8) R/ (U8) G/ (U8) B) / (U8) A
-                fb = Array(repeating: 0xFF, count: Int(frame_buffer_size))
                 
+                fb = Array()
+                
+                let imagePath = URL(fileURLWithPath: "/Users/zimsneexh/drip-fhd.png")
+                
+                let image = NSImage(contentsOf: imagePath)!
+                
+                let pxd = image.pixelData()
+                
+                for px in pxd {
+                    fb?.append(px.b)
+                    fb?.append(px.g)
+                    fb?.append(px.r)
+                    fb?.append(px.a)
+                }
                 
             // 6bit Colors with 2bit AlphaChannel
             } else if pixelformat.depth == 6 && pixelformat.bits_per_pixel == 8 {
@@ -105,7 +125,7 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
             // Check for framebuffer
             guard let fb = fb else {
                 NSLog("Could not allocate Framebuffer")
-                break
+                return
             }
             
             // Build Rectangle struct
@@ -125,120 +145,15 @@ func handle_event(pixelformat: inout PixelFormat, socket: Socket, buffer: inout 
                 return
             }
             
+            // Write to socket
+            do {
+                try socket.write(from: Data(bytes: frame_buffer_update, count: frame_buffer_update.count))
+            } catch {
+                NSLog("BrokenPipeError")
+                return
+            }
+            
             NSLog("Frame update sent!")
-            
-            // Dispatching to background Queue
-            DispatchQueue.global(qos: .userInitiated).async {
-                repeat {
-                    
-                    
-                } while(true)
-            }
-
-            /*
-            let filePath = NSHomeDirectory() + "/drip.png"
-            let image = NSImage(contentsOfFile: filePath)!
-            
-            //var bitmap_rep: NSBitmapImageRep? = nil
-            var cropped_image: NSImage? = nil
-            
-            // Construct the target frame
-            let target_frame = NSRect(x: CGFloat(x_position), y: CGFloat(y_position), width: CGFloat(req_width), height: CGFloat(req_height))
-            
-            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                let croppedCGImage = cgImage.cropping(to: target_frame)
-                
-                if let croppedImage = croppedCGImage {
-                    cropped_image = NSImage(cgImage: croppedImage, size: NSSize(width: croppedImage.width, height: croppedImage.height))
-                    
-                    //bitmap_rep = NSBitmapImageRep(cgImage: croppedImage)
-                    NSLog("NSImage cropped.")
-                }
-            }
-            
-            if let rawData = nsImageToRawEncoding(image: cropped_image!, rawEncoding: UInt8(4)) {
-                // Use the rawData for further processing or transmission
-                print("Conversion successful. Raw data size: \(rawData.count)")
-                
-                let content_rect = Rectangle(width: UInt16(cropped_image?.size.width ?? 0), height: UInt16(cropped_image?.size.width ?? 0))
-                let fbu = FramebufferUpdate(rectangles: [content_rect]).pack()
-                
-                NSLog("Sending FramebufferUpdate-Structure..")
-                try! socket.write(from: Data(bytes: fbu, count: fbu.count))
-                
-                NSLog("Sending FB..")
-                try! socket.write(from: rawData)
-
-                
-            } else {
-                print("Conversion failed.")
-            }
-             */
-            
-            
-            
-            /*
-            // Extract the raw pixel data
-            let height = bitmap_rep?.pixelsHigh
-            let width = bitmap_rep?.pixelsWide
-            let data = bitmap_rep?.bitmapData
-            
-            if(height ?? 0 != req_height) {
-                NSLog("Height != req_height.")
-            }
-            
-            if(height ?? 0 != req_height) {
-                NSLog("Height != req_height.")
-            }
-            
-        
-            NSLog("Cropped image: h=\(height) w=\(width)")
-            
-            let image_bytes = Array(UnsafeBufferPointer(start: data, count: (height ?? 0) * (bitmap_rep?.bytesPerRow ?? 0)))
-            
-
-            
-            NSLog("Sending payload..")
-            
-            // Assuming you want to convert the image to an RGBA format
-            let rawEncoding: UInt8 = 4
-
-            if let rawData = nsImageToRawEncoding(image: bitmap_rep, rawEncoding: UInt8(4)) {
-                // Use the rawData for further processing or transmission
-                print("Conversion successful. Raw data size: \(rawData.count)")
-            } else {
-                print("Conversion failed.")
-            }
-
-            
-            
-            //try! socket.write(from: Data(bytes: sond, count: sond.count))
-            */
-            /*
-            if let image = NSImage(contentsOfFile: filePath) {
-
-
-                
-
-                // Calculate the size of the data in bytes
-                let dataSize = height * imageRep.bytesPerRow
-
-                // Convert the UnsafeMutablePointer<UInt8> to an [UInt8] array
-                let image_bytes = Array(UnsafeBufferPointer(start: data, count: dataSize))
-                
-
-                fbu.append(contentsOf: image_bytes)
-                
-                do {
-                    print("SENDING")
-                    try socket.write(from: Data(bytes: fbu, count: fbu.count))
-                } catch {
-                    print("\(error)")
-                }
-                
-            }
-            */
-
             break
             
         case CommandTypes.KeyEvent:
