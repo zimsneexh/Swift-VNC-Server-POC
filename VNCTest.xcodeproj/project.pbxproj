@@ -8,6 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		477E30672A2722E900F3356B /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 477E30662A2722E900F3356B /* main.swift */; };
+		477E306F2A27232600F3356B /* Socket in Frameworks */ = {isa = PBXBuildFile; productRef = 477E306E2A27232600F3356B /* Socket */; };
+		47B157342A2795A900BE061B /* pixelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B157332A2795A900BE061B /* pixelData.swift */; };
+		47B157382A27C3D600BE061B /* VNCHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B157372A27C3D600BE061B /* VNCHandler.swift */; };
+		47B1573A2A27D12500BE061B /* VNCStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B157392A27D12500BE061B /* VNCStructs.swift */; };
+		47B1573C2A28929D00BE061B /* VNCEncode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B1573B2A28929D00BE061B /* VNCEncode.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +30,10 @@
 /* Begin PBXFileReference section */
 		477E30632A2722E900F3356B /* VNCTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = VNCTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		477E30662A2722E900F3356B /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		47B157332A2795A900BE061B /* pixelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pixelData.swift; sourceTree = "<group>"; };
+		47B157372A27C3D600BE061B /* VNCHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VNCHandler.swift; sourceTree = "<group>"; };
+		47B157392A27D12500BE061B /* VNCStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VNCStructs.swift; sourceTree = "<group>"; };
+		47B1573B2A28929D00BE061B /* VNCEncode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VNCEncode.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				477E306F2A27232600F3356B /* Socket in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,6 +68,10 @@
 			isa = PBXGroup;
 			children = (
 				477E30662A2722E900F3356B /* main.swift */,
+				47B157332A2795A900BE061B /* pixelData.swift */,
+				47B157372A27C3D600BE061B /* VNCHandler.swift */,
+				47B157392A27D12500BE061B /* VNCStructs.swift */,
+				47B1573B2A28929D00BE061B /* VNCEncode.swift */,
 			);
 			path = VNCTest;
 			sourceTree = "<group>";
@@ -78,6 +92,9 @@
 			dependencies = (
 			);
 			name = VNCTest;
+			packageProductDependencies = (
+				477E306E2A27232600F3356B /* Socket */,
+			);
 			productName = VNCTest;
 			productReference = 477E30632A2722E900F3356B /* VNCTest */;
 			productType = "com.apple.product-type.tool";
@@ -106,6 +123,9 @@
 				Base,
 			);
 			mainGroup = 477E305A2A2722E900F3356B;
+			packageReferences = (
+				477E306D2A27232600F3356B /* XCRemoteSwiftPackageReference "BlueSocket" */,
+			);
 			productRefGroup = 477E30642A2722E900F3356B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -120,6 +140,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				47B1573C2A28929D00BE061B /* VNCEncode.swift in Sources */,
+				47B157382A27C3D600BE061B /* VNCHandler.swift in Sources */,
+				47B157342A2795A900BE061B /* pixelData.swift in Sources */,
+				47B1573A2A27D12500BE061B /* VNCStructs.swift in Sources */,
 				477E30672A2722E900F3356B /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -284,6 +308,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		477E306D2A27232600F3356B /* XCRemoteSwiftPackageReference "BlueSocket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Kitura/BlueSocket";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		477E306E2A27232600F3356B /* Socket */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 477E306D2A27232600F3356B /* XCRemoteSwiftPackageReference "BlueSocket" */;
+			productName = Socket;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 477E305B2A2722E900F3356B /* Project object */;
 }
